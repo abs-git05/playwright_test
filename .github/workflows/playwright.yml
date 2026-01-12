@@ -38,7 +38,9 @@ jobs:
       run: npx playwright test --project="${{ matrix.project }}"
       env:
         CI: true
-    
+    - name: TestDino Reporter
+      run: npx tdpw upload path/to/json/report/directory --token="trx_staging_d32b2f83fab1e36ec1f423b19a126b3d5e9d8085a13f0aeaf9d69f75afd44c70" --upload-html
+
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
@@ -57,10 +59,7 @@ jobs:
         path: playwright-report/
         retention-days: 30
 
-      - name: TestDino Reporter
-  run:
-    npx tdpw upload path/to/json/report/directory --token="trx_staging_d32b2f83fab1e36ec1f423b19a126b3d5e9d8085a13f0aeaf9d69f75afd44c70" --upload-html
-
+    
   # Combine reports from all browsers into a single report
   merge-reports:
     if: always()
