@@ -1,0 +1,79 @@
+name: Manual Playwright Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_file:
+        description: 'Specific test file to run (optional)'
+        required: false
+        type: string
+        default: ''
+      browser:
+        description: 'Browser to test on'
+        required: true
+        type: choice
+        options:
+          - 'all'
+          - 'chromium'
+          - 'firefox'
+          - 'webkit'
+          - 'Mobile Chrome'
+        default: 'chromium'
+      headed:
+        description: 'Run tests in headed mode'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  manual-test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+    
+    - name: Run specific test file
+      if: ${{ inputs.test_file != '' && inputs.browser != 'all' }}
+      run: npx playwright test ${{ inputs.test_file }} --project="${{ inputs.browser }}" ${{ inputs.headed && '--headed' || '' }}
+      env:
+        CI: true
+    
+    - name: Run all tests on specific browser
+      if: ${{ inputs.test_file == '' && inputs.browser != 'all' }}
+      run: npx playwright test --project="${{ inputs.browser }}" ${{ inputs.headed && '--headed' || '' }}
+      env:
+        CI: true
+    
+    - name: Run specific test file on all browsers
+      if: ${{ inputs.test_file != '' && inputs.browser == 'all' }}
+      run: npx playwright test ${{ inputs.test_file }} ${{ inputs.headed && '--headed' || '' }}
+      env:
+        CI: true
+    
+    - name: Run all tests on all browsers
+      if: ${{ inputs.test_file == '' && inputs.browser == 'all' }}
+      run: npx playwright test ${{ inputs.headed && '--headed' || '' }}
+      env:
+        CI: true
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: manual-test-results
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 7
